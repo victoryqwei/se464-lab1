@@ -80,4 +80,17 @@ export default class MySqlDB implements IDatabase {
   updateUser = async (patch: UserPatchRequest) => {
     ///TODO: Implement this
   };
+
+  // This is to delete the inserted order to avoid database data being contaminated also to make the data in database consistent with that in the json files so the comparison will return true.
+  // Feel free to modify this based on your inserOrder implementation
+  deleteOrder = async (id: string) => {
+    await this.connection.query(
+      `DELETE FROM order_items WHERE orderId = ?`,
+      [id]
+    );
+    await this.connection.query(
+      `DELETE FROM orders WHERE id = ?`,
+      [id]
+    );
+  };
 };

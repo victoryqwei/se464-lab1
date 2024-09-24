@@ -3,6 +3,7 @@ import {
     AppServiceImplementation,
     UserRequest,
     EmptyRequest,
+    EmptyResponse,
     OrderRequest,
     ProductRequest,
     UserPatchRequest,
@@ -71,6 +72,15 @@ class GrpcServiceImpl implements AppServiceImplementation {
         await this.db.updateUser(request);
         const user = await this.db.queryUserById(request.id);
         return user;
+    }
+    async deleteOrder(request: OrderRequest): Promise<DeepPartial<EmptyResponse>> {
+        const { id } = request;
+        try {
+          await this.db.deleteOrder(id);
+          return {}; // EmptyResponse
+        } catch (error) {
+          throw error;
+        }
     }
 };
 

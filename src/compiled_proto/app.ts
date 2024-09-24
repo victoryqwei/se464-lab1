@@ -8,6 +8,9 @@ export const protobufPackage = "";
 export interface EmptyRequest {
 }
 
+export interface EmptyResponse {
+}
+
 export interface AllProductsRequest {
   categoryId?: string | undefined;
 }
@@ -120,6 +123,49 @@ export const EmptyRequest = {
   },
   fromPartial(_: DeepPartial<EmptyRequest>): EmptyRequest {
     const message = createBaseEmptyRequest();
+    return message;
+  },
+};
+
+function createBaseEmptyResponse(): EmptyResponse {
+  return {};
+}
+
+export const EmptyResponse = {
+  encode(_: EmptyResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EmptyResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEmptyResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): EmptyResponse {
+    return {};
+  },
+
+  toJSON(_: EmptyResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<EmptyResponse>): EmptyResponse {
+    return EmptyResponse.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<EmptyResponse>): EmptyResponse {
+    const message = createBaseEmptyResponse();
     return message;
   },
 };
@@ -1260,6 +1306,14 @@ export const AppDefinition = {
       responseStream: false,
       options: {},
     },
+    deleteOrder: {
+      name: "DeleteOrder",
+      requestType: OrderRequest,
+      requestStream: false,
+      responseType: EmptyResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1275,6 +1329,7 @@ export interface AppServiceImplementation<CallContextExt = {}> {
   getAllUsers(request: EmptyRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Users>>;
   postOrder(request: Order, context: CallContext & CallContextExt): Promise<DeepPartial<Order>>;
   patchAccountDetails(request: UserPatchRequest, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
+  deleteOrder(request: OrderRequest, context: CallContext & CallContextExt): Promise<DeepPartial<EmptyResponse>>;
 }
 
 export interface AppClient<CallOptionsExt = {}> {
@@ -1289,6 +1344,7 @@ export interface AppClient<CallOptionsExt = {}> {
   getAllUsers(request: DeepPartial<EmptyRequest>, options?: CallOptions & CallOptionsExt): Promise<Users>;
   postOrder(request: DeepPartial<Order>, options?: CallOptions & CallOptionsExt): Promise<Order>;
   patchAccountDetails(request: DeepPartial<UserPatchRequest>, options?: CallOptions & CallOptionsExt): Promise<User>;
+  deleteOrder(request: DeepPartial<OrderRequest>, options?: CallOptions & CallOptionsExt): Promise<EmptyResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

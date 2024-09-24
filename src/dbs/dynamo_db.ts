@@ -1,6 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { IDatabase } from "../interfaces";
-import { GetCommand, ScanCommand, PutCommand, UpdateCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, ScanCommand, PutCommand, UpdateCommand, DynamoDBDocumentClient, DeleteCommand } from "@aws-sdk/lib-dynamodb";
 import { Category, Order, Product, User, UserPatchRequest } from "../types";
 
 export default class DynamoDB implements IDatabase {
@@ -103,12 +103,24 @@ export default class DynamoDB implements IDatabase {
   };
 
   async insertOrder(order: Order): Promise<void> {
-    ///TODO: Implement this--replace the line below
+    ///TODO: Implement this--replace the line below. Make sure the deleteOrder is called after insertOrder. You can use "await".
     return new Promise<void>(() => { });
   }
 
   async updateUser(patch: UserPatchRequest): Promise<void> {
     ///TODO: Implement this--replace the line below
     return new Promise<void>(() => { });
+  };
+
+  // This is to delete the inserted order to avoid database data being contaminated also to make the data in database consistent with that in the json files so the comparison will return true.
+  // Feel free to modify this based on your inserOrder implementation
+  async deleteOrder(id: string): Promise<void> {
+    const command = new DeleteCommand({
+      TableName: "Orders",
+      Key: {
+        id: id,
+      },
+    });
+    await this.docClient.send(command);
   };
 };

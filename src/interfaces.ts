@@ -12,6 +12,7 @@ export interface IDatabase {
     queryAllUsers(): Promise<User[]>;
     insertOrder(order: Order): Promise<void>;
     updateUser(patch: UserPatchRequest): Promise<void>;
+    deleteOrder(id: string): Promise<void>;
 };
 
 export interface IServer {

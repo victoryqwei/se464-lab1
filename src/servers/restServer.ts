@@ -106,6 +106,21 @@ export default class RestServer implements IServer {
       res.send(response);
     }); // Updates a user's email or password
 
+    this.server.delete("/order/:id", async (req: express.Request, res: express.Response) => {
+      const { id } = req.params as OrderRequest;
+      if (!id) {
+        res.status(400).send("No order id provided");
+        return;
+      }
+      try {
+        await this.db.deleteOrder(id);
+        res.status(204).send(); // No Content
+      } catch (error) {
+        console.error(`Error deleting order with id ${id}:`, error);
+        res.status(500).send({ error: 'Failed to delete order' });
+      }
+    }); // Deletes an order by id
+
     this.server.listen(port, () => {
       console.log(`REST server listening on port ${port}`);
     });

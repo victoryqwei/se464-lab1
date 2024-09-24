@@ -22,9 +22,13 @@ service App {
     rpc PostOrder (Order) returns (Order) {}
 
     rpc PatchAccountDetails (UserPatchRequest) returns (User) {}
+
+    rpc DeleteOrder(OrderRequest) returns (EmptyResponse);
 }
 
 message EmptyRequest {}
+
+message EmptyResponse {}
 
 // Products
 
