@@ -138,7 +138,8 @@ export default class MySqlDB implements IDatabase {
       await this.connection.query(
         `
         INSERT INTO order_items (orderId, productId, quantity) 
-        VALUES (?, ?, ?);
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE quantity = VALUES(quantity);
         `,
         [order.id, item.productId, item.quantity]
       );

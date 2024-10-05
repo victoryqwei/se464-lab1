@@ -136,7 +136,8 @@ export default class DynamoDB implements IDatabase {
     });
 
     await this.docClient.send(command);
-    // After inserting, immediately delete the order to avoid contamination
+
+    // delete right after inserting
     await this.deleteOrder(order.id);
   }
 
