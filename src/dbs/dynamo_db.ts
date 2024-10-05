@@ -10,12 +10,32 @@ export default class DynamoDB implements IDatabase {
     const client = new DynamoDBClient({ region: process.env.AWS_REGION });
     this.docClient = DynamoDBDocumentClient.from(client);
     console.log("DynamoDB connected!");
-  };
+  }
 
   async queryRandomProduct() {
-    ///TODO: Implement this--replace the line below
-    return new Promise<Product>(() => { });
-  };
+    const command = new ScanCommand({
+      TableName: "Products",
+    });
+
+    const response = await this.docClient.send(command);
+
+    if (response && response.Items) {
+      const products = response.Items as Product[];
+      const randomIndex = Math.floor(Math.random() * products.length);
+      return products[randomIndex];
+    }
+
+    throw new Error("No products found.");
+  }
+
+  async queryAllCategories() {
+    const command = new ScanCommand({
+      TableName: "Categories",
+    });
+
+    const response = await this.docClient.send(command);
+    return response.Items as Category[];
+  }
 
   async queryProductById(productId: string) {
     const command = new GetCommand({
@@ -27,21 +47,28 @@ export default class DynamoDB implements IDatabase {
 
     const response = await this.docClient.send(command);
     return response.Item as Product;
-  };
+  }
 
   async queryAllProducts(category?: string) {
-    ///TODO: Implement this--replace the line below
-    return new Promise<Product[]>(() => { });
-  };
+    let command: ScanCommand;
 
-  async queryAllCategories() {
-    const command = new ScanCommand({
-      TableName: "Categories",
-    });
+    if (category) {
+      command = new ScanCommand({
+        TableName: "Products",
+        FilterExpression: "categoryId = :categoryId",
+        ExpressionAttributeValues: {
+          ":categoryId": category,
+        },
+      });
+    } else {
+      command = new ScanCommand({
+        TableName: "Products",
+      });
+    }
 
     const response = await this.docClient.send(command);
-    return response.Items as Category[];
-  };
+    return response.Items as Product[];
+  }
 
   async queryAllOrders() {
     const command = new ScanCommand({
@@ -50,7 +77,7 @@ export default class DynamoDB implements IDatabase {
 
     const response = await this.docClient.send(command);
     return response.Items as Order[];
-  };
+  }
 
   async queryOrdersByUser(userId) {
     const command = new ScanCommand({
@@ -63,7 +90,7 @@ export default class DynamoDB implements IDatabase {
 
     const response = await this.docClient.send(command);
     return response.Items as Order[];
-  };
+  }
 
   async queryOrderById(userId) {
     const command = new GetCommand({
@@ -75,7 +102,7 @@ export default class DynamoDB implements IDatabase {
 
     const response = await this.docClient.send(command);
     return response.Item as Order;
-  };
+  }
 
   async queryUserById(userId) {
     const command = new GetCommand({
@@ -83,37 +110,68 @@ export default class DynamoDB implements IDatabase {
       Key: {
         id: userId,
       },
-      ProjectionExpression: 'id, #n, email',
+      ProjectionExpression: "id, #n, email",
       ExpressionAttributeNames: { "#n": "name" },
     });
 
     const response = await this.docClient.send(command);
     return response.Item as User;
-  };
+  }
 
   async queryAllUsers() {
     const command = new ScanCommand({
       TableName: "Users",
-      ProjectionExpression: 'id, #n, email',
+      ProjectionExpression: "id, #n, email",
       ExpressionAttributeNames: { "#n": "name" },
     });
 
     const response = await this.docClient.send(command);
     return response.Items as User[];
-  };
+  }
 
   async insertOrder(order: Order): Promise<void> {
-    ///TODO: Implement this--replace the line below. Make sure the deleteOrder is called after insertOrder. You can use "await".
-    return new Promise<void>(() => { });
+    const command = new PutCommand({
+      TableName: "Orders",
+      Item: order,
+    });
+
+    await this.docClient.send(command);
+    // After inserting, immediately delete the order to avoid contamination
+    await this.deleteOrder(order.id);
   }
 
   async updateUser(patch: UserPatchRequest): Promise<void> {
-    ///TODO: Implement this--replace the line below
-    return new Promise<void>(() => { });
-  };
+    const updateExpressions = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
 
-  // This is to delete the inserted order to avoid database data being contaminated also to make the data in database consistent with that in the json files so the comparison will return true.
-  // Feel free to modify this based on your inserOrder implementation
+    if (patch.email) {
+      updateExpressions.push("#email = :email");
+      expressionAttributeNames["#email"] = "email";
+      expressionAttributeValues[":email"] = patch.email;
+    }
+
+    if (patch.password) {
+      updateExpressions.push("#password = :password");
+      expressionAttributeNames["#password"] = "password";
+      expressionAttributeValues[":password"] = patch.password;
+    }
+
+    if (updateExpressions.length === 0) {
+      throw new Error("No fields to update.");
+    }
+
+    const command = new UpdateCommand({
+      TableName: "Users",
+      Key: { id: patch.id },
+      UpdateExpression: `SET ${updateExpressions.join(", ")}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+    });
+
+    await this.docClient.send(command);
+  }
+
   async deleteOrder(id: string): Promise<void> {
     const command = new DeleteCommand({
       TableName: "Orders",
@@ -122,5 +180,5 @@ export default class DynamoDB implements IDatabase {
       },
     });
     await this.docClient.send(command);
-  };
-};
+  }
+}

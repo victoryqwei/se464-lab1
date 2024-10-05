@@ -21,76 +21,155 @@ export default class MySqlDB implements IDatabase {
     this.init();
   }
 
-  async queryProductById(productId) {
-    return (await this.connection.query(`SELECT *
-                                FROM products
-                                WHERE id = "${productId}";`))[0][0] as Product;
-  };
+  async queryProductById(productId: string) {
+    const [result] = await this.connection.query(
+      `
+      SELECT * 
+      FROM products
+      WHERE id = ?;
+      `,
+      [productId]
+    );
+    return result[0] as Product;
+  }
 
   async queryRandomProduct() {
-    ///TODO: Implement this
-    return this.connection.query('') as unknown as Product;
-  };
+    const [result] = await this.connection.query(`
+      SELECT * 
+      FROM products
+      ORDER BY RAND()
+      LIMIT 1;
+    `);
+    return result[0] as Product;
+  }
 
-  queryAllProducts = async (category?: string) => {
-    ///TODO: Implement this
-    return this.connection.query('') as unknown as Product[];
-  };
+  async queryAllProducts(categoryId?: string) {
+    if (categoryId) {
+      const [result] = await this.connection.query(
+        `
+        SELECT * 
+        FROM products 
+        WHERE categoryId = ?;
+        `,
+        [categoryId]
+      );
+      return result as Product[];
+    } else {
+      const [result] = await this.connection.query(`
+        SELECT * 
+        FROM products;
+      `);
+      return result as Product[];
+    }
+  }
 
-  queryAllCategories = async () => {
-    return (await this.connection.query("SELECT * FROM categories;"))[0] as Category[];
-  };
+  async queryAllCategories() {
+    const [result] = await this.connection.query(`
+      SELECT * 
+      FROM categories;
+    `);
+    return result as Category[];
+  }
 
-  queryAllOrders = async () => {
-    ///TODO: Implement this
-    return (await this.connection.query(""))[0] as Order[];
-  };
+  async queryAllOrders() {
+    const [result] = await this.connection.query(`
+      SELECT * 
+      FROM orders;
+    `);
+    return result as Order[];
+  }
 
-  async queryOrdersByUser(id: string) {
-    ///TODO: Implement this
-    return (
-      await this.connection.query('')
-    )[0] as Order[]; // Not a perfect analog for NoSQL, since SQL cannot return a list.
-  };
-
-  queryOrderById = async (id: string) => {
-    return (
-      await this.connection.query(`SELECT *
-                             FROM orders
-                             WHERE id = "${id}"`)
-    )[0][0];
-  };
-
-  queryUserById = async (id: string) => {
-    return (
-      await this.connection.query(`SELECT id, email, name
-                             FROM users
-                             WHERE id = "${id}";`)
-    )[0][0];
-  };
-
-  queryAllUsers = async () => {
-    return (await this.connection.query("SELECT id, name, email FROM users"))[0] as User[];
-  };
-
-  insertOrder = async (order: Order) => {
-    ///TODO: Implement this
-  };
-
-  updateUser = async (patch: UserPatchRequest) => {
-    ///TODO: Implement this
-  };
-
-  // This is to delete the inserted order to avoid database data being contaminated also to make the data in database consistent with that in the json files so the comparison will return true.
-  // Feel free to modify this based on your inserOrder implementation
-  deleteOrder = async (id: string) => {
-    await this.connection.query(
-      `DELETE FROM order_items WHERE orderId = ?`,
-      [id]
+  async queryOrdersByUser(userId: string) {
+    const [result] = await this.connection.query(
+      `
+      SELECT * 
+      FROM orders
+      WHERE userId = ?;
+      `,
+      [userId]
     );
-    await this.connection.query(
-      `DELETE FROM orders WHERE id = ?`,
-      [id]
+    return result as Order[];
+  }
+
+  async queryOrderById(orderId: string) {
+    const [result] = await this.connection.query(
+      `
+      SELECT * 
+      FROM orders
+      WHERE id = ?;
+      `,
+      [orderId]
     );
-  };
-};
+    return result[0] as Order;
+  }
+
+  async queryUserById(userId: string) {
+    const [result] = await this.connection.query(
+      `
+      SELECT id, email, name 
+      FROM users
+      WHERE id = ?;
+      `,
+      [userId]
+    );
+    return result[0] as User;
+  }
+
+  async queryAllUsers() {
+    const [result] = await this.connection.query(`
+      SELECT id, name, email 
+      FROM users;
+    `);
+    return result as User[];
+  }
+
+  async insertOrder(order: Order) {
+    // Insert the order into the orders table
+    await this.connection.query(
+      `
+      INSERT INTO orders (id, userId, totalAmount) 
+      VALUES (?, ?, ?);
+      `,
+      [order.id, order.userId, order.totalAmount]
+    );
+
+    // Insert order items into the order_items table
+    for (const item of order.products) {
+      await this.connection.query(
+        `
+        INSERT INTO order_items (orderId, productId, quantity) 
+        VALUES (?, ?, ?);
+        `,
+        [order.id, item.productId, item.quantity]
+      );
+    }
+  }
+
+  async updateUser(patch: UserPatchRequest) {
+    const fields: string[] = [];
+    const values: (string | undefined)[] = [];
+
+    if (patch.email) {
+      fields.push("email = ?");
+      values.push(patch.email);
+    }
+
+    if (patch.password) {
+      fields.push("password = ?"); // Assuming there's a password field
+      values.push(patch.password);
+    }
+
+    if (fields.length > 0) {
+      const query = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
+      values.push(patch.id); // Add the user ID at the end
+      await this.connection.query(query, values);
+    }
+  }
+
+  async deleteOrder(orderId: string) {
+    // Delete from order_items first
+    await this.connection.query(`DELETE FROM order_items WHERE orderId = ?`, [orderId]);
+    // Then delete from orders
+    await this.connection.query(`DELETE FROM orders WHERE id = ?`, [orderId]);
+  }
+}
