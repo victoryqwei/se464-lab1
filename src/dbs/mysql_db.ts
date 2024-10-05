@@ -124,7 +124,7 @@ export default class MySqlDB implements IDatabase {
   }
 
   async insertOrder(order: Order) {
-    // Insert the order into the orders table
+    // insert the order into the orders table
     await this.connection.query(
       `
       INSERT INTO orders (id, userId, totalAmount) 
@@ -133,15 +133,14 @@ export default class MySqlDB implements IDatabase {
       [order.id, order.userId, order.totalAmount]
     );
 
-    // Insert order items into the order_items table
+    // insert order items into the order_items table
     for (const item of order.products) {
       await this.connection.query(
         `
-        INSERT INTO order_items (orderId, productId, quantity) 
-        VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE quantity = VALUES(quantity);
+        INSERT INTO order_items (id, orderId, productId, quantity) 
+        VALUES (?, ?, ?, ?);
         `,
-        [order.id, item.productId, item.quantity]
+        [`${order.id},${item.productId}`, order.id, item.productId, item.quantity]
       );
     }
   }
@@ -156,21 +155,19 @@ export default class MySqlDB implements IDatabase {
     }
 
     if (patch.password) {
-      fields.push("password = ?"); // Assuming there's a password field
+      fields.push("password = ?");
       values.push(patch.password);
     }
 
     if (fields.length > 0) {
       const query = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
-      values.push(patch.id); // Add the user ID at the end
+      values.push(patch.id);
       await this.connection.query(query, values);
     }
   }
 
   async deleteOrder(orderId: string) {
-    // Delete from order_items first
     await this.connection.query(`DELETE FROM order_items WHERE orderId = ?`, [orderId]);
-    // Then delete from orders
     await this.connection.query(`DELETE FROM orders WHERE id = ?`, [orderId]);
   }
 }
