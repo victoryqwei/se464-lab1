@@ -16,10 +16,11 @@ import {
     User,
     Users,
     DeepPartial,
-} from '../compiled_proto/app';
-import { IDatabase, IServer } from '../interfaces';
+} from "../compiled_proto/app";
+import { IDatabase, IServer } from "../interfaces";
 
-import { createServer } from 'nice-grpc';
+import { createServer } from "nice-grpc";
+import logger from "../logger";
 
 class GrpcServiceImpl implements AppServiceImplementation {
     db: IDatabase;
@@ -32,15 +33,21 @@ class GrpcServiceImpl implements AppServiceImplementation {
         const product = await this.db.queryProductById(request.productId);
         return product;
     }
-    async getRandomProduct(request: EmptyRequest): Promise<DeepPartial<Product>> {
+    async getRandomProduct(
+        request: EmptyRequest
+    ): Promise<DeepPartial<Product>> {
         const product = await this.db.queryRandomProduct();
         return product;
     }
-    async getAllProducts(request: AllProductsRequest): Promise<DeepPartial<Products>> {
+    async getAllProducts(
+        request: AllProductsRequest
+    ): Promise<DeepPartial<Products>> {
         const products = await this.db.queryAllProducts(request.categoryId);
         return { products };
     }
-    async getAllCategories(request: EmptyRequest): Promise<DeepPartial<Categories>> {
+    async getAllCategories(
+        request: EmptyRequest
+    ): Promise<DeepPartial<Categories>> {
         const categories = await this.db.queryAllCategories();
         return { categories };
     }
@@ -68,25 +75,29 @@ class GrpcServiceImpl implements AppServiceImplementation {
         await this.db.insertOrder(request);
         return request;
     }
-    async patchAccountDetails(request: UserPatchRequest): Promise<DeepPartial<User>> {
+    async patchAccountDetails(
+        request: UserPatchRequest
+    ): Promise<DeepPartial<User>> {
         await this.db.updateUser(request);
         const user = await this.db.queryUserById(request.id);
         return user;
     }
-    async deleteOrder(request: OrderRequest): Promise<DeepPartial<EmptyResponse>> {
+    async deleteOrder(
+        request: OrderRequest
+    ): Promise<DeepPartial<EmptyResponse>> {
         const { id } = request;
         try {
-          await this.db.deleteOrder(id);
-          return {}; // EmptyResponse
+            await this.db.deleteOrder(id);
+            return {}; // EmptyResponse
         } catch (error) {
-          throw error;
+            throw error;
         }
     }
-};
+}
 
 export default class GrpcServer implements IServer {
     server: any;
-    db: IDatabase
+    db: IDatabase;
 
     constructor(db: IDatabase) {
         this.db = db;
@@ -97,6 +108,6 @@ export default class GrpcServer implements IServer {
         const port = 3001;
         this.server.add(AppDefinition, new GrpcServiceImpl(this.db));
         await this.server.listen(`0.0.0.0:${port}`);
-        console.log(`gRPC server listening on port ${port}`);
+        logger.info(`gRPC server listening on port ${port}`);
     }
-};
+}
