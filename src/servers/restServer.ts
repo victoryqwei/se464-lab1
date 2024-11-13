@@ -25,16 +25,19 @@ export default class RestServer implements IServer {
     start() {
         const port = 3000;
         this.server.use(cors());
+        let requestCount = 0;
         this.server.use(
             morgan(":method :url :status :response-time ms", {
                 stream: {
                     write: (message) => {
                         const logArray = message.split(" ");
+                        requestCount++;
                         const logObject = {
                             method: logArray[0],
                             url: logArray[1],
                             status: logArray[2],
                             responseTime: logArray[3],
+                            requestCount,
                         };
                         logger.info(JSON.stringify(logObject));
                     },
